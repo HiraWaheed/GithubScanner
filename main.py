@@ -64,30 +64,45 @@ def search_repositories(query: str, headers: Dict) -> List[Dict]:
 
 def export_results(repos: List[Dict], filename: str):
     """Export results to CSV file"""
-    with open(filename, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        
-        for repo in repos:
-            writer.writerow([
-                repo['html_url']
-            ])
+    try: 
+        with open(filename, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            
+            for repo in repos:
+                writer.writerow([
+                    repo['html_url']
+                ])
+    except Exception as e:
+        print(f"Error occurred: {e}")
 
 def main():
+    try: 
+        github_token = os.getenv("GITHUB_TOKEN")
 
-    github_token = os.getenv("GITHUB_TOKEN")
-    
-    # Search for repositories from 2015-2024
-    date_range = ('2015-01-01', '2024-12-31')
-    language = 'javascript'
-    
-    headers = get_auth_headers(github_token)
+        if not github_token:
+            raise ValueError(
+                "GitHub token not found! Please set the GITHUB_TOKEN environment variable.\n"
+                "Example: docker run -e GITHUB_TOKEN=your_token_here github-scanner"
+            )
+        
+        # Search for repositories from 2015-2024
+        date_range = ('2015-01-01', '2024-12-31')
+        language = 'go' 
+        
+        headers = get_auth_headers(github_token)
 
-    print(f"Searching for potentially vulnerable {language} repositories...")
-    repos = search_repositories(create_github_query(language, date_range), headers)
-    
-    # Export results
-    export_results(repos, f'vulnerable_{language}_repos.csv')
-    print(f"Results exported to vulnerable_{language}_repos.csv")
-    
+        print(f"Searching for potentially vulnerable {language} repositories...")
+        repos = search_repositories(create_github_query(language, date_range), headers)
+        
+        output_dir = "/app/output"
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, f'vulnerable_{language}_repos.csv')
+        # Export results
+        export_results(repos, output_file)
+        print(f"Results exported to output file: {output_file}")
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+
 if __name__ == "__main__":
     main()
